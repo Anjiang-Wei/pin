@@ -22,13 +22,16 @@ using std::string;
 /* ===================================================================== */
 /* Names of malloc and free */
 /* ===================================================================== */
-#if defined(TARGET_MAC)
-#define MALLOC "_malloc"
-#define FREE "_free"
-#else
-#define MALLOC "malloc"
-#define FREE "free"
-#endif
+// #if defined(TARGET_MAC)
+// #define MALLOC "_malloc"
+// #define FREE "_free"
+// #else
+// #define MALLOC "malloc"
+// #define FREE "free"
+// #endif
+
+#define RRAM_MALLOC "rram_malloc"//"malloc"//"rram_malloc"
+#define RRAM_FREE "rram_free"//"free"//"rram_free"
 
 /* ===================================================================== */
 /* Global Variables */
@@ -62,13 +65,13 @@ VOID Image(IMG img, VOID* v)
     // of each malloc() or free(), and the return value of malloc().
     //
     //  Find the malloc() function.
-    RTN mallocRtn = RTN_FindByName(img, MALLOC);
+    RTN mallocRtn = RTN_FindByName(img, RRAM_MALLOC);
     if (RTN_Valid(mallocRtn))
     {
         RTN_Open(mallocRtn);
 
-        // Instrument malloc() to print the input argument value and the return value.
-        RTN_InsertCall(mallocRtn, IPOINT_BEFORE, (AFUNPTR)Arg1Before, IARG_ADDRINT, MALLOC, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+        // Instrument RRAM_MALLOC() to print the input argument value and the return value.
+        RTN_InsertCall(mallocRtn, IPOINT_BEFORE, (AFUNPTR)Arg1Before, IARG_ADDRINT, RRAM_MALLOC, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
                        IARG_END);
         RTN_InsertCall(mallocRtn, IPOINT_AFTER, (AFUNPTR)MallocAfter, IARG_FUNCRET_EXITPOINT_VALUE, IARG_END);
 
@@ -76,12 +79,12 @@ VOID Image(IMG img, VOID* v)
     }
 
     // Find the free() function.
-    RTN freeRtn = RTN_FindByName(img, FREE);
+    RTN freeRtn = RTN_FindByName(img, RRAM_FREE);
     if (RTN_Valid(freeRtn))
     {
         RTN_Open(freeRtn);
         // Instrument free() to print the input argument value.
-        RTN_InsertCall(freeRtn, IPOINT_BEFORE, (AFUNPTR)Arg1Before, IARG_ADDRINT, FREE, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+        RTN_InsertCall(freeRtn, IPOINT_BEFORE, (AFUNPTR)Arg1Before, IARG_ADDRINT, RRAM_FREE, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
                        IARG_END);
         RTN_Close(freeRtn);
     }
@@ -97,7 +100,7 @@ VOID Fini(INT32 code, VOID* v) { TraceFile.close(); }
 
 INT32 Usage()
 {
-    cerr << "This tool produces a trace of calls to malloc." << endl;
+    cerr << "This tool produces a trace of calls to RRAM_MALLOC." << endl;
     cerr << endl << KNOB_BASE::StringKnobSummary() << endl;
     return -1;
 }
