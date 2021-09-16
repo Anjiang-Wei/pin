@@ -16,9 +16,10 @@ void* rram_malloc(size_t size)
 
 int main()
 {
-    int* p = (int*) rram_malloc(0x10);
-    p[0] = 0x89;
+    int* p = (int*) rram_malloc(2 * sizeof(int));
     // try more addresses on larger scale
+    p[0] = p[1] + 23;
+    cout << p[0] << endl;
     rram_free(p);
 
     int* nopin = (int*) malloc(0x20);

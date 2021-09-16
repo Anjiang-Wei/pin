@@ -21,17 +21,6 @@ using std::string;
 using std::vector;
 using std::pair;
 
-/* ===================================================================== */
-/* Names of malloc and free */
-/* ===================================================================== */
-// #if defined(TARGET_MAC)
-// #define MALLOC "_malloc"
-// #define FREE "_free"
-// #else
-// #define MALLOC "malloc"
-// #define FREE "free"
-// #endif
-
 #define RRAM_MALLOC "rram_malloc"
 #define RRAM_FREE "rram_free"
 string RRAM_MALLOC_mangled = "";
@@ -40,7 +29,7 @@ string RRAM_FREE_mangled = "";
 /* ===================================================================== */
 /* Global Variables */
 /* ===================================================================== */
-
+bool isRRAM_addr(ADDRINT addr);
 std::ofstream TraceFile;
 
 /* ===================================================================== */
@@ -54,28 +43,18 @@ KNOB< string > KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "1.out", "spe
 /* ===================================================================== */
 /* Analysis routines                                                     */
 /* ===================================================================== */
-pair<ADDRINT, size_t> last_malloc_record;
-vector<pair<ADDRINT, size_t> > all_malloc_record;
+pair<ADDRINT, ADDRINT> last_malloc_record; // address, size
+vector<pair<ADDRINT, ADDRINT> > all_malloc_record;
 
-// Move from memory to register
-ADDRINT DoLoad(REG reg, ADDRINT* addr)
+VOID MallocBefore(CHAR* name, ADDRINT size)
 {
-    TraceFile << "Emulate loading from addr " << addr << " to " << REG_StringShort(reg) << endl;
-    ADDRINT value;
-    PIN_SafeCopy(&value, addr, sizeof(ADDRINT));
-    return value;
-}
-
-VOID Arg1Before(CHAR* name, ADDRINT size)
-{
-    TraceFile << name << "(" << size << ")" << endl;
-    last_malloc_record.first = size;
+    last_malloc_record.second = size;
 }
 
 VOID MallocAfter(ADDRINT ret)
 {
-    TraceFile << "  returns " << ret << endl;
-    last_malloc_record.second = ret;
+    last_malloc_record.first = ret;
+    TraceFile << last_malloc_record.first << " " << last_malloc_record.second << std::endl;
     all_malloc_record.push_back(last_malloc_record);
 }
 
@@ -84,21 +63,65 @@ VOID MallocAfter(ADDRINT ret)
 /* ===================================================================== */
 bool isRRAM_addr(ADDRINT addr)
 {
-    return true;
+    for (auto item:all_malloc_record)
+    {
+        if (item.first <= addr && addr < item.first + item.second)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
-VOID EmulateLoad(INS ins, VOID* v)
+VOID PIN_FAST_ANALYSIS_CALL MyLoad(ADDRINT* addrptr, UINT32 size)
 {
-    // Find the instructions that move a value from memory to a register
-    if (INS_Opcode(ins) == XED_ICLASS_MOV && INS_IsMemoryRead(ins) && INS_OperandIsReg(ins, 0) && INS_OperandIsMemory(ins, 1))
+	ADDRINT addr = (ADDRINT) addrptr;
+    if (isRRAM_addr(addr))
     {
-        // op0 <- *op1
-        if (isRRAM_addr((ADDRINT) IARG_MEMORYREAD_EA)){
-            INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(DoLoad), IARG_UINT32, REG(INS_OperandReg(ins, 0)), IARG_MEMORYREAD_EA,
-                       IARG_RETURN_REGS, INS_OperandReg(ins, 0), IARG_END);
+        UINT64 data;
+	    PIN_SafeCopy(&data, (void *) addr, size);
+        TraceFile << "myload " << addrptr << " size " << size << " data " << data << std::endl;
+        PIN_SafeCopy((void *) addr, &data, size);
+    }
+}
 
-            // Delete the instruction
-            INS_Delete(ins);
+VOID PIN_FAST_ANALYSIS_CALL MyStore(ADDRINT * addrptr, UINT32 size)
+{
+    ADDRINT addr = (ADDRINT) addrptr;
+	if (isRRAM_addr(addr))
+    {
+        UINT64 data;
+	    PIN_SafeCopy(&data, (void *) addr, size);
+        TraceFile << "mystore " << addrptr << " size " << size << " data " << data << std::endl;
+        PIN_SafeCopy((void *) addr, &data, size);
+    }
+}
+
+VOID InstrumentNormalInstruction(INS ins, VOID* v){
+    UINT32 memOperands = INS_MemoryOperandCount(ins);
+    // Iterate over each memory operand of the instruction.
+    for (UINT32 memOp = 0; memOp < memOperands; memOp++)
+    {
+		UINT8 memOpSize = INS_MemoryOperandSize(ins, memOp);
+		//found a memory read instance
+        if (INS_MemoryOperandIsRead(ins, memOp))
+        {
+			INS_InsertPredicatedCall(
+				ins, IPOINT_BEFORE, (AFUNPTR) MyLoad,
+				IARG_MEMORYOP_EA, memOp,
+				IARG_UINT32, memOpSize,
+				IARG_END);
+        }
+        // Note that in some architectures a single memory operand can be 
+        // both read and written (for instance incl (%eax) on IA-32)
+        // In that case we instrument it once for read and once for write.
+        if (INS_MemoryOperandIsWritten(ins, memOp) && INS_HasFallThrough(ins))
+        {
+           INS_InsertPredicatedCall(
+                ins, IPOINT_AFTER, (AFUNPTR) MyStore,
+                IARG_MEMORYOP_EA, memOp,
+                IARG_UINT32, memOpSize,
+                IARG_END);
         }
     }
 }
@@ -134,7 +157,7 @@ VOID Image(IMG img, VOID* v)
     {
         RTN_Open(mallocRtn);
         // Instrument RRAM_MALLOC() to print the input argument value and the return value.
-        RTN_InsertCall(mallocRtn, IPOINT_BEFORE, (AFUNPTR)Arg1Before, IARG_ADDRINT, RRAM_MALLOC, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+        RTN_InsertCall(mallocRtn, IPOINT_BEFORE, (AFUNPTR)MallocBefore, IARG_ADDRINT, RRAM_MALLOC, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
                        IARG_END);
         RTN_InsertCall(mallocRtn, IPOINT_AFTER, (AFUNPTR)MallocAfter, IARG_FUNCRET_EXITPOINT_VALUE, IARG_END);
 
@@ -142,15 +165,15 @@ VOID Image(IMG img, VOID* v)
     }
 
     // Find the free() function.
-    RTN freeRtn = RTN_FindByName(img, RRAM_FREE_mangled.c_str());
-    if (RTN_Valid(freeRtn))
-    {
-        RTN_Open(freeRtn);
-        // Instrument free() to print the input argument value.
-        RTN_InsertCall(freeRtn, IPOINT_BEFORE, (AFUNPTR)Arg1Before, IARG_ADDRINT, RRAM_FREE, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-                       IARG_END);
-        RTN_Close(freeRtn);
-    }
+    // RTN freeRtn = RTN_FindByName(img, RRAM_FREE_mangled.c_str());
+    // if (RTN_Valid(freeRtn))
+    // {
+    //     RTN_Open(freeRtn);
+    //     // Instrument free() to print the input argument value.
+    //     RTN_InsertCall(freeRtn, IPOINT_BEFORE, (AFUNPTR)Arg1Before, IARG_ADDRINT, RRAM_FREE, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+    //                    IARG_END);
+    //     RTN_Close(freeRtn);
+    // }
 }
 
 /* ===================================================================== */
@@ -186,10 +209,9 @@ int main(int argc, char* argv[])
     TraceFile << hex;
     TraceFile.setf(ios::showbase);
 
-    // Register Image to be called to instrument functions.
     IMG_AddInstrumentFunction(Image, 0);
 
-    INS_AddInstrumentFunction(EmulateLoad, 0);
+    INS_AddInstrumentFunction(InstrumentNormalInstruction, 0);
     PIN_AddFiniFunction(Fini, 0);
 
     // Never returns
