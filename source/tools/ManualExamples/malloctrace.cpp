@@ -23,9 +23,9 @@ using std::pair;
 using std::map;
 
 #define RRAM_MALLOC "rram_malloc"
-#define RRAM_FREE "rram_free"
 string RRAM_MALLOC_mangled = "";
-string RRAM_FREE_mangled = "";
+// #define RRAM_FREE "rram_free"
+// string RRAM_FREE_mangled = "";
 
 /* ===================================================================== */
 /* Global Variables */
@@ -171,21 +171,20 @@ VOID InstrumentNormalInstruction(INS ins, VOID* v){
 
 void find_mangled_symbols(IMG img)
 {
-    std::cout << "----------------------" << std::endl;
     for (SYM sym = IMG_RegsymHead(img); SYM_Valid(sym); sym = SYM_Next(sym))
     {
         string s1 = SYM_Name(sym);
-        if (s1.find(RRAM_MALLOC) != std::string::npos)
+        if (s1.find(RRAM_MALLOC) != std::string::npos && s1.find("GLOBAL") == std::string::npos)
         {
             RRAM_MALLOC_mangled = s1;
         }
-        if (s1.find(RRAM_FREE) != std::string::npos && s1.find("GLOBAL") == std::string::npos)
-        {
-            RRAM_FREE_mangled = s1;
-        }
+        // if (s1.find(RRAM_FREE) != std::string::npos && s1.find("GLOBAL") == std::string::npos)
+        // {
+        //     RRAM_FREE_mangled = s1;
+        // }
     }
-    std::cout << RRAM_MALLOC_mangled << std::endl;
-    std::cout << RRAM_FREE_mangled << std::endl;
+    // std::cout << RRAM_MALLOC_mangled << std::endl;
+    // std::cout << RRAM_FREE_mangled << std::endl;
 }
 
 VOID Image(IMG img, VOID* v)
