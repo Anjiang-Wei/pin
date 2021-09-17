@@ -20,6 +20,7 @@ using std::ios;
 using std::string;
 using std::vector;
 using std::pair;
+using std::map;
 
 #define RRAM_MALLOC "rram_malloc"
 #define RRAM_FREE "rram_free"
@@ -29,22 +30,91 @@ string RRAM_FREE_mangled = "";
 /* ===================================================================== */
 /* Global Variables */
 /* ===================================================================== */
+VOID MallocBefore(CHAR* name, ADDRINT size);
+VOID MallocAfter(ADDRINT ret);
 bool isRRAM_addr(ADDRINT addr);
+void store_data_reg(UINT8* dataptr, UINT8* addrptr, UINT32 size);
+void load_data_reg(UINT8* dataptr, UINT8* addrptr, UINT32 size);
+void store_data_bit(UINT8* dataptr, UINT8* addrptr, UINT32 size);
+void load_data_bit(UINT8* dataptr, UINT8* addrptr, UINT32 size);
 std::ofstream TraceFile;
-
-/* ===================================================================== */
-/* Commandline Switches */
-/* ===================================================================== */
-
 KNOB< string > KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "1.out", "specify trace file name");
 
-/* ===================================================================== */
+/*---------------------------------------------------------------------- */
 
-/* ===================================================================== */
-/* Analysis routines                                                     */
-/* ===================================================================== */
 pair<ADDRINT, ADDRINT> last_malloc_record; // address, size
 vector<pair<ADDRINT, ADDRINT> > all_malloc_record;
+map<ADDRINT, UINT8> regmem; // regular memory, mapping from memory address to byte
+map<ADDRINT, bool> bitmem; // bit-level memory, mapping from bit-level address (reg address * 8) to bit
+
+void store_data_reg(UINT8* dataptr, UINT8* addrptr, UINT32 size)
+{
+    ADDRINT addr = (ADDRINT) addrptr;
+    for (UINT32 i = 0; i < size; i++)
+    {
+        regmem[addr + i] = dataptr[i];
+    }
+}
+
+void load_data_reg(UINT8* dataptr, UINT8* addrptr, UINT32 size)
+{
+    ADDRINT addr = (ADDRINT) addrptr;
+    for (UINT32 i = 0; i < size; i++)
+    {
+        dataptr[i] = regmem[addr + i];
+    }
+}
+
+void store_data_bit(UINT8* dataptr, UINT8* addrptr, UINT32 size)
+{
+    ADDRINT addr = (ADDRINT) addrptr;
+    for (UINT32 i = 0; i < size; i++)
+    {
+        for (UINT32 j = 0; j < 8; j++)
+        {
+            bitmem[((addr + i) << 3) + j] = dataptr[i] & (1 << j);
+        }
+    }
+}
+
+void load_data_bit(UINT8* dataptr, UINT8* addrptr, UINT32 size)
+{
+    ADDRINT addr = ((ADDRINT) addrptr);
+    for (UINT32 i = 0; i < size; i++)
+    {
+        dataptr[i] = 0;
+        for (UINT32 j = 0; j < 8; j++)
+        {
+            dataptr[i] |= (bitmem[((addr + i) << 3) + j] & 1) << j;
+        }
+    }
+}
+
+VOID PIN_FAST_ANALYSIS_CALL MyLoad(ADDRINT* addrptr, UINT32 size)
+{
+	ADDRINT addr = (ADDRINT) addrptr;
+    if (isRRAM_addr(addr))
+    {
+        UINT64 data;
+	    PIN_SafeCopy(&data, (void *) addr, size);
+        load_data_bit(reinterpret_cast<UINT8*>(&data), reinterpret_cast<UINT8*>(addrptr), size);
+        TraceFile << "myload " << addrptr << " size " << size << " data " << data << std::endl;
+        PIN_SafeCopy((void *) addr, &data, size);
+    }
+}
+
+VOID PIN_FAST_ANALYSIS_CALL MyStore(ADDRINT * addrptr, UINT32 size)
+{
+    ADDRINT addr = (ADDRINT) addrptr;
+	if (isRRAM_addr(addr))
+    {
+        UINT64 data;
+	    PIN_SafeCopy(&data, (void *) addr, size);
+        store_data_bit(reinterpret_cast<UINT8*>(&data), reinterpret_cast<UINT8*>(addrptr), size);
+        TraceFile << "mystore " << addrptr << " size " << size << " data " << data << std::endl;
+        PIN_SafeCopy((void *) addr, &data, size);
+    }
+}
 
 VOID MallocBefore(CHAR* name, ADDRINT size)
 {
@@ -58,9 +128,6 @@ VOID MallocAfter(ADDRINT ret)
     all_malloc_record.push_back(last_malloc_record);
 }
 
-/* ===================================================================== */
-/* Instrumentation routines                                              */
-/* ===================================================================== */
 bool isRRAM_addr(ADDRINT addr)
 {
     for (auto item:all_malloc_record)
@@ -71,30 +138,6 @@ bool isRRAM_addr(ADDRINT addr)
         }
     }
     return false;
-}
-
-VOID PIN_FAST_ANALYSIS_CALL MyLoad(ADDRINT* addrptr, UINT32 size)
-{
-	ADDRINT addr = (ADDRINT) addrptr;
-    if (isRRAM_addr(addr))
-    {
-        UINT64 data;
-	    PIN_SafeCopy(&data, (void *) addr, size);
-        TraceFile << "myload " << addrptr << " size " << size << " data " << data << std::endl;
-        PIN_SafeCopy((void *) addr, &data, size);
-    }
-}
-
-VOID PIN_FAST_ANALYSIS_CALL MyStore(ADDRINT * addrptr, UINT32 size)
-{
-    ADDRINT addr = (ADDRINT) addrptr;
-	if (isRRAM_addr(addr))
-    {
-        UINT64 data;
-	    PIN_SafeCopy(&data, (void *) addr, size);
-        TraceFile << "mystore " << addrptr << " size " << size << " data " << data << std::endl;
-        PIN_SafeCopy((void *) addr, &data, size);
-    }
 }
 
 VOID InstrumentNormalInstruction(INS ins, VOID* v){
@@ -156,24 +199,11 @@ VOID Image(IMG img, VOID* v)
     if (RTN_Valid(mallocRtn))
     {
         RTN_Open(mallocRtn);
-        // Instrument RRAM_MALLOC() to print the input argument value and the return value.
         RTN_InsertCall(mallocRtn, IPOINT_BEFORE, (AFUNPTR)MallocBefore, IARG_ADDRINT, RRAM_MALLOC, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
                        IARG_END);
         RTN_InsertCall(mallocRtn, IPOINT_AFTER, (AFUNPTR)MallocAfter, IARG_FUNCRET_EXITPOINT_VALUE, IARG_END);
-
         RTN_Close(mallocRtn);
     }
-
-    // Find the free() function.
-    // RTN freeRtn = RTN_FindByName(img, RRAM_FREE_mangled.c_str());
-    // if (RTN_Valid(freeRtn))
-    // {
-    //     RTN_Open(freeRtn);
-    //     // Instrument free() to print the input argument value.
-    //     RTN_InsertCall(freeRtn, IPOINT_BEFORE, (AFUNPTR)Arg1Before, IARG_ADDRINT, RRAM_FREE, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-    //                    IARG_END);
-    //     RTN_Close(freeRtn);
-    // }
 }
 
 /* ===================================================================== */

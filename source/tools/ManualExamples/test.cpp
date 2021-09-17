@@ -20,10 +20,13 @@ int main()
     // try more addresses on larger scale
     p[0] = p[1] + 23;
     cout << p[0] << endl;
-    rram_free(p);
+    int* p2 = (int*) rram_malloc(10 * sizeof(int));
+    p2[0] = p[0] + 24;
+    cout << p2[0] << endl;
 
     int* nopin = (int*) malloc(0x20);
     nopin[0] = 0x98;
     free(nopin);
+
     return 0;
 }
