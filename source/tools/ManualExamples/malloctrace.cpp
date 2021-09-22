@@ -13,6 +13,7 @@
 #include "pin.H"
 #include <iostream>
 #include <fstream>
+#include <stdlib.h>
 using std::cerr;
 using std::endl;
 using std::hex;
@@ -37,6 +38,7 @@ void store_data_reg(UINT8* dataptr, UINT8* addrptr, UINT32 size);
 void load_data_reg(UINT8* dataptr, UINT8* addrptr, UINT32 size);
 void store_data_bit(UINT8* dataptr, UINT8* addrptr, UINT32 size);
 void load_data_bit(UINT8* dataptr, UINT8* addrptr, UINT32 size);
+bool rand_oracle(int prob); // return true at a probability of prob / 100
 std::ofstream TraceFile;
 KNOB< string > KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "1.out", "specify trace file name");
 
@@ -46,6 +48,13 @@ pair<ADDRINT, ADDRINT> last_malloc_record; // address, size
 vector<pair<ADDRINT, ADDRINT> > all_malloc_record;
 map<ADDRINT, UINT8> regmem; // regular memory, mapping from memory address to byte
 map<ADDRINT, bool> bitmem; // bit-level memory, mapping from bit-level address (reg address * 8) to bit
+int load_preserve_prob; // read accuracy
+int store_preserve_prob; // write accuracy
+
+bool rand_oracle(int prob)
+{
+    return (rand() % 1000) < prob;
+}
 
 void store_data_reg(UINT8* dataptr, UINT8* addrptr, UINT32 size)
 {
@@ -72,10 +81,20 @@ void store_data_bit(UINT8* dataptr, UINT8* addrptr, UINT32 size)
     {
         for (UINT32 j = 0; j < 8; j++)
         {
-            bitmem[((addr + i) << 3) + j] = dataptr[i] & (1 << j);
+            if (rand_oracle(999))
+            {
+                TraceFile << "faith" << i << " " << j << std::endl;
+                bitmem[((addr + i) << 3) + j] = (dataptr[i] & (1 << j)) != 0;
+            }
+            else
+            {
+                TraceFile << "corrupted" << i << " " << j << std::endl;
+                bitmem[((addr + i) << 3) + j] = (dataptr[i] & (1 << j)) == 0;
+            }
         }
     }
 }
+
 
 void load_data_bit(UINT8* dataptr, UINT8* addrptr, UINT32 size)
 {
@@ -118,13 +137,14 @@ VOID PIN_FAST_ANALYSIS_CALL MyStore(ADDRINT * addrptr, UINT32 size)
 
 VOID MallocBefore(CHAR* name, ADDRINT size)
 {
+    TraceFile << "BEFORE" << std::endl;
     last_malloc_record.second = size;
 }
 
 VOID MallocAfter(ADDRINT ret)
 {
     last_malloc_record.first = ret;
-    TraceFile << last_malloc_record.first << " " << last_malloc_record.second << std::endl;
+    TraceFile << "AFTER" << last_malloc_record.first << " " << last_malloc_record.second << std::endl;
     all_malloc_record.push_back(last_malloc_record);
 }
 

@@ -4,8 +4,9 @@ using namespace std;
 
 void* rram_malloc(size_t size)
 {
-    cout << "rram malloc" << endl;
+    cout << "rram malloc prob: " << endl;
     void* p1 = malloc(size);
+    cout << "finish malloc" << endl;
     return p1;
 }
 
@@ -62,30 +63,31 @@ int main()
 {
     int test_size = 101;
     
-    char* p0 = (char*) rram_malloc(test_size * sizeof(char));
-    compute(p0, 10);
-    cout << p0[0] << endl;
+    // char* p0 = (char*) rram_malloc(test_size * sizeof(char));
+    // compute(p0, 10);
+    // cout << p0[0] << endl;
 
     int* p1 = (int*) rram_malloc(test_size * sizeof(int));
+    // EMUL_set_parameters(p1, write_error_prob=0.01, );
     compute(p1, test_size);
     cout << p1[0] << endl;
     
-    float* p2 = (float*) rram_malloc(test_size * sizeof(float));
-    compute(p2, test_size);
-    cout << p2[0] << endl;
+    // float* p2 = (float*) rram_malloc(test_size * sizeof(float));
+    // compute(p2, test_size);
+    // cout << p2[0] << endl;
 
-    double* p3 = (double*) rram_malloc(test_size * sizeof(double));
-    compute(p3, test_size);
-    cout << p3[0] << endl;
+    // double* p3 = (double*) rram_malloc(test_size * sizeof(double));
+    // compute(p3, test_size);
+    // cout << p3[0] << endl;
 
-    int* nopin = (int*) malloc(test_size * sizeof(int));
-    cout << "nothing should happen" << endl;
-    nopin[0] = 0x98;
-    free(nopin);
-    free(p0);
-    free(p1);
-    free(p2);
-    free(p3);
+    // int* nopin = (int*) malloc(test_size * sizeof(int));
+    // cout << "nothing should happen" << endl;
+    // nopin[0] = 0x98;
+    // free(nopin);
+    // free(p0);
+    // free(p1);
+    // free(p2);
+    // free(p3);
 
     return 0;
 }
