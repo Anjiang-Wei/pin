@@ -34,8 +34,8 @@ print(torch.__version__)
 
 """We set the number of threads to compare the single thread performance between FP32 and INT8 performance. In the end of the tutorial, the user can set other number of threads by building PyTorch with right parallel backend."""
 
-torch.set_num_threads(1)
-print(torch.__config__.parallel_info())
+# torch.set_num_threads(1)
+# print(torch.__config__.parallel_info())
 
 configs = Namespace()
 
@@ -208,6 +208,15 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
     dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_labels)
     return dataset
 
+def time_model_evaluation(model, configs, tokenizer):
+    eval_start_time = time.time()
+    result = evaluate(configs, model, tokenizer, prefix="")
+    eval_end_time = time.time()
+    eval_duration_time = eval_end_time - eval_start_time
+    print(result)
+    print("Evaluate total time (seconds): {0:.1f}".format(eval_duration_time))
+
+
 """# 3. Apply the dynamic quantization
 
 We call `torch.quantization.quantize_dynamic` on the model to apply the dynamic quantization on the HuggingFace BERT model. Specifically,
@@ -219,7 +228,7 @@ We call `torch.quantization.quantize_dynamic` on the model to apply the dynamic 
 quantized_model = torch.quantization.quantize_dynamic(
     model, {torch.nn.Linear}, dtype=torch.qint8
 )
-# print(quantized_model)
+# # print(quantized_model)
 
 """## 3.1 Check the model size
 Let's first check the model size. We can observe a significant reduction in model size:
@@ -232,13 +241,62 @@ Let's first check the model size. We can observe a significant reduction in mode
 
 # print_size_of_model(model, "fp32")
 # print_size_of_model(quantized_model, "int8")
+# old_map = {}
+# new_map = {}
 
-def param(model):
-    for name, param in model.named_parameters():
-        print(name, param)
+# def param(model, store_map):
+#     for name, param in model.named_parameters():
+#         # if "weight" in name:
+#         #     print(name, param)
+#         store_map[name] = param
 
-# name_param(model)
-param(quantized_model)
+# param(model, old_map)
+# param(quantized_model, new_map)
+
+def diff_map(m1, m2):
+    for key1 in m1.keys():
+        if key1 not in m2.keys():
+            print(key1 + ' only in old!')
+        else:
+            print(m1[key1].type(torch.FloatTensor).sum(), m2[key1].type(torch.FloatTensor).sum())
+
+# diff_map(old_map, new_map)
+
+torch.save(model.state_dict(), 'model.pth')
+# print('Size (MB):', os.path.getsize('quantized.pth')/1e6)
+
+original = torch.load('model.pth')
+
+model.load_state_dict(original)
+
+float32_param = {}
+int8_param = {}
+qfloat32_param = {}
+
+for name, param in model.named_parameters():
+	float32_param[name] = param
+
+for key, val in float32_param.items():
+    qval = val * 16
+    # assert -128 <= qval <= 127
+    int8_param[key] = qval.type(torch.CharTensor)
+
+for key, qval in int8_param.items():
+    val = qval.type(torch.FloatTensor)
+    val = val / 16
+    qfloat32_param[key] = val
+
+assert original.keys() == qfloat32_param.keys()
+
+diff_map(original, qfloat32_param)
+
+time_model_evaluation(model, configs, tokenizer)
+print("AFTER")
+model.load_state_dict(qfloat32_param)
+time_model_evaluation(model, configs, tokenizer)
+exit()
+
+
 
 
 """The BERT model used in this tutorial (bert-base-uncased) has a vocabulary size V of 30522. With the embedding size of 768, the total size of the word embedding table is ~ 4 (Bytes/FP32) * 30522 * 768 = 90 MB. So with the help of quantization, the model size of the non-embedding table part is reduced from 350 MB (FP32 model) to 90 MB (INT8 model).
@@ -248,19 +306,15 @@ param(quantized_model)
 Next, let's compare the inference time as well as the evaluation accuracy between the original FP32 model and the INT8 model after the dynamic quantization.
 """
 
-# def time_model_evaluation(model, configs, tokenizer):
-#     eval_start_time = time.time()
-#     result = evaluate(configs, model, tokenizer, prefix="")
-#     eval_end_time = time.time()
-#     eval_duration_time = eval_end_time - eval_start_time
-#     print(result)
-#     print("Evaluate total time (seconds): {0:.1f}".format(eval_duration_time))
+
 
 # # Evaluate the original FP32 BERT model
 # time_model_evaluation(model, configs, tokenizer)
 
-# # Evaluate the INT8 BERT model after the dynamic quantization
-# time_model_evaluation(quantized_model, configs, tokenizer)
+# Evaluate the INT8 BERT model after the dynamic quantization
+time_model_evaluation(quantized_model, configs, tokenizer)
+# {'acc': 0.8455882352941176, 'f1': 0.891566265060241, 'acc_and_f1': 0.8685772501771793}
+
 
 # """Running this locally on a MacBook Pro, without quantization, inference (for all 408 examples in MRPC dataset) takes about 160 seconds, and with quantization it takes just about 90 seconds. We summarize the results for running the quantized BERT model inference on a Macbook Pro as the follows:
 
