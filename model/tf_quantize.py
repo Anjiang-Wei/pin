@@ -225,9 +225,10 @@ def run_tflite_model(tflite_file, test_image_indices):
 
     if "mnist_model_quant.tflite" in str(tflite_file):
       np_array8 = interpreter.get_tensor(8)
-      # print("david", np_array8)
+      print("david", np_array8)
+      # https://www.tensorflow.org/api_docs/python/tf/lite/Interpreter
       interpreter.set_tensor(8, np_array8)
-      interpreter.reset_all_variables()
+      # interpreter.reset_all_variables()
 
     interpreter.invoke()
     output = interpreter.get_tensor(output_details["index"])[0]
