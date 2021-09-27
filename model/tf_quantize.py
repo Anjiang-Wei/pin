@@ -179,15 +179,17 @@ print('output: ', output_type)
 
 import pathlib
 
-tflite_models_dir = pathlib.Path("/tmp/mnist_tflite_models/")
+tflite_models_dir = pathlib.Path("./mnist_tflite_models/")
 tflite_models_dir.mkdir(exist_ok=True, parents=True)
 
 # Save the unquantized/float model:
 tflite_model_file = tflite_models_dir/"mnist_model.tflite"
 tflite_model_file.write_bytes(tflite_model)
+
 # Save the quantized model:
 tflite_model_quant_file = tflite_models_dir/"mnist_model_quant.tflite"
 tflite_model_quant_file.write_bytes(tflite_model_quant)
+
 
 """## 运行 TensorFlow Lite 模型
 
@@ -219,6 +221,14 @@ def run_tflite_model(tflite_file, test_image_indices):
 
     test_image = np.expand_dims(test_image, axis=0).astype(input_details["dtype"])
     interpreter.set_tensor(input_details["index"], test_image)
+
+
+    if "mnist_model_quant.tflite" in str(tflite_file):
+      np_array8 = interpreter.get_tensor(8)
+      # print("david", np_array8)
+      interpreter.set_tensor(8, np_array8)
+      interpreter.reset_all_variables()
+
     interpreter.invoke()
     output = interpreter.get_tensor(output_details["index"])[0]
 
@@ -258,11 +268,9 @@ def test_model(tflite_file, test_image_index, model_type):
   _ = plt.title(template.format(true= str(test_labels[test_image_index]), predict=str(predictions[0])))
   plt.grid(False)
 
+# test_model(tflite_model_file, test_image_index, model_type="Float")
 
-test_model(tflite_model_file, test_image_index, model_type="Float")
-
-test_model(tflite_model_quant_file, test_image_index, model_type="Quantized")
-
+# test_model(tflite_model_quant_file, test_image_index, model_type="Quantized")
 
 # Helper function to evaluate a TFLite model on all images
 def evaluate_model(tflite_file, model_type):
@@ -278,6 +286,7 @@ def evaluate_model(tflite_file, model_type):
       model_type, accuracy, len(test_images)))
 
 
-evaluate_model(tflite_model_file, model_type="Float")
-
+# evaluate_model(tflite_model_file, model_type="Float")
+print("BAD!!!!!!!!!!!!")
 evaluate_model(tflite_model_quant_file, model_type="Quantized")
+print("OVER!!!!!!!!!!!")
