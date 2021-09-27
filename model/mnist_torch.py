@@ -8,6 +8,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
+from fault import mutate_tensor
+
+original_model = "mnist_torch.pt"
+mutate_model = "mnist_torch.pt0"
 
 
 class Net(nn.Module):
@@ -132,7 +136,17 @@ def main():
         scheduler.step()
 
     if args.save_model:
-        torch.save(model.state_dict(), "mnist_torch.pt")
+        torch.save(model.state_dict(), original_model)
+        torch.save(model.state_dict(), mutate_model)
+
+def fault_inject():
+    state_dict = torch.load(mutate_model)
+    for item in state_dict:
+        v = state_dict[item]
+        v_ = mutate_tensor(v)
+        state_dict[item] = v_
+    torch.save(state_dict, mutate_model)
+
 
 def test_net():
     device = torch.device("cpu")
@@ -144,10 +158,15 @@ def test_net():
     dataset2 = datasets.MNIST('./data', train=False,
                        transform=transform)
     test_loader = torch.utils.data.DataLoader(dataset2, batch_size=1000)
-    model.load_state_dict(torch.load("mnist_torch.pt"))
+    # model.load_state_dict(torch.load(original_model))
+    # test(model, device, test_loader)
+    fault_inject()
+    model.load_state_dict(torch.load(mutate_model))
+    print("===========Fault Injected==============")
     test(model, device, test_loader)
 
 if __name__ == '__main__':
     # main()
     test_net()
-    
+    # fault_inject()
+   
