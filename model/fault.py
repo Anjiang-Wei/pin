@@ -22,10 +22,10 @@ def mutate_float(fval):
     # binary = f1.bin
     f1.invert(random_oracle_float())
     fval2 = f1.float
-    if first:
-        # print("difference: ", fval2 - fval)
-        first = True
-        sum_diff += abs(fval2 - fval)
+    # if first:
+    #     # print("difference: ", fval2 - fval)
+    #     first = True
+    #     sum_diff += abs(fval2 - fval)
     return fval2
     
 
@@ -35,7 +35,11 @@ def mutate_list(vals):
         if type(v) == float:
             v_ = mutate_float(v)
             res.append(v_)
+        elif type(v) == int:
+            res.append(v)
         else:
+            print(type(v))
+            print("-------------------")
             raise NotImplementedError
     return res
 
@@ -48,5 +52,25 @@ def mutate_tensor(tensor):
     mutated_list = mutate_list(flatten.tolist())
     new_tensor = torch.tensor(mutated_list, dtype=tensor.dtype)
     new_tensor = new_tensor.view(*size)
-    print("sum_diff:", tensor.size(), sum_diff)
+    # print("sum_diff:", tensor.size(), sum_diff)
     return new_tensor
+
+def should_skip(name):
+    skipped = ["num_batches_tracked"]
+    for s in skipped:
+        if s in name:
+            return True
+    return False
+
+def fault_inject_torch(model_path):
+    state_dict = torch.load(model_path)
+    print(len(state_dict))
+    cnt = 0
+    for item in state_dict:
+        cnt += 1
+        print(cnt, end=",", flush=True)
+        if not should_skip(item):
+            v = state_dict[item]
+            v_ = mutate_tensor(v)
+            state_dict[item] = v_
+    torch.save(state_dict, model_path)

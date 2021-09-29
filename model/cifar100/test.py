@@ -19,13 +19,19 @@ from torch.utils.data import DataLoader
 from conf import settings
 from utils import get_network, get_test_dataloader
 
-if __name__ == '__main__':
+import sys
+sys.path.append('..')
+from fault import fault_inject_torch
 
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-net', type=str, required=True, help='net type')
     parser.add_argument('-weights', type=str, required=True, help='the weights file you want to test')
     parser.add_argument('-gpu', action='store_true', default=False, help='use gpu or not')
     parser.add_argument('-b', type=int, default=16, help='batch size for dataloader')
+    parser.add_argument('--mutate', dest='mutate', action='store_true')
+    parser.add_argument('--no-mutate', dest='mutate', action='store_false')
+    parser.set_defaults(feature=False)
     args = parser.parse_args()
 
     net = get_network(args)
@@ -37,6 +43,10 @@ if __name__ == '__main__':
         num_workers=4,
         batch_size=args.b,
     )
+
+    if args.mutate == True:
+        print("Mutation Enabled")
+        fault_inject_torch(args.weights)
 
     net.load_state_dict(torch.load(args.weights))
     # print(net)
