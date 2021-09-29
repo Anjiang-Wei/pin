@@ -14,8 +14,9 @@ import seaborn as sns
 filename = ""
 data = {}
 length = 0
-error_rate = 0.0
+werror_rate = 0.0
 low_high = {}
+num_level = 0
 
 def data_init():
     def add_to_dict(dct, entry_name, init_value, append_item):
@@ -33,27 +34,53 @@ def data_init():
             add_to_dict(data, "success", [], int(float(splitted[8])))
 
 def data_validate():
+    total_w_success = 0
+    total_r_success = 0
     def extract_features():
-        global length, error_rate, low_high
+        global length, werror_rate, low_high, num_level
         length = len(data["addr"])
         low_high = list(dict(zip(data["rlo"], data["rhi"])).items())
-        error_rate = data["success"].count(0) / length
+        num_level = len(low_high)
+        werror_rate = data["success"].count(0) / length
     
     def print_features():
-        print("length", length)
-        print("error_rate", error_rate)
-        print("low_high", low_high)
+        # print("length", length)
+        # print("low_high", low_high)
+        assert ((1 - total_w_success / length) - werror_rate) < 0.000001
+        print("write_range_error_rate:", werror_rate)
+        print("read_range_error_rate:", 1 - total_r_success / length)
+        print("")
     
-    def validate_write_success(low, high, final, success):
-        if final >= low and final <= high:
+    def validate_write_success(w_low, w_high, r_low, r_high, final, success):
+        nonlocal total_w_success, total_r_success
+        if final >= w_low and final <= w_high:
             assert success == 1
+            total_w_success += 1
         else:
             assert success == 0
+        if final >= r_low and final <= r_high:
+            total_r_success += 1
+        else:
+            assert success == 0, final # if read range fails, write range should also fail
     
     extract_features()
-    print_features()
+    w_lows, w_highs = sorted(list(set(data["rlo"]))), sorted(list(set(data["rhi"])))
+    if num_level == 8:
+        r_lows = [0.0000, 4.38, 4.84, 5.42, 6.16, 7.19, 9.23, 35]
+        r_highs = [4.3, 4.75, 5.3, 6.01, 6.99, 8.9, 25, 10000]
+    elif num_level == 4:
+        r_lows = [0.0000, 5.38, 6.93, 18]
+        r_highs = [5.1, 6.48, 14, 10000]
+    else:
+        exit()
+    r_lows, r_highs = [x * 1000 for x in r_lows], [y * 1000 for y in r_highs]
+    assert len(r_lows) == len(w_lows)
+    assert len(r_highs) == len(w_highs)
     for i in range(length):
-        validate_write_success(data["rlo"][i], data["rhi"][i], data["rf"][i], data["success"][i])
+        index = w_lows.index(data["rlo"][i])
+        assert w_highs[index] == data["rhi"][i]
+        validate_write_success(w_lows[index], w_highs[index], r_lows[index], r_highs[index], data["rf"][i], data["success"][i])
+    print_features()
 
 def draw():
     '''
@@ -108,4 +135,4 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     data_init()
     data_validate()
-    draw()
+    # draw()

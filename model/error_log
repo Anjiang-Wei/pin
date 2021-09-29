@@ -1,0 +1,92 @@
+../data/sdr/data/2bpc/sdr-4wl-eval-chip1-8-7-20.csv
+write_range_error_rate: 0.037841796875
+read_range_error_rate: 0.0198974609375
+
+../data/sdr/data/2bpc/sdr-4wl-eval-chip1-8k-8-9-20.csv
+write_range_error_rate: 0.03131103515625
+read_range_error_rate: 0.004974365234375
+
+../data/sdr/data/2bpc/sdr-4wl-eval-chip2-8k-8-9-20.csv
+write_range_error_rate: 0.02752685546875
+read_range_error_rate: 0.00457763671875
+
+../data/sdr/data/2bpc/sdr-4wl-eval-chip2-8-9-20.csv
+write_range_error_rate: 0.040985107421875
+read_range_error_rate: 0.02703857421875
+
+../data/sdr/data/3bpc/sdr-4wl-eval-chip1-7-30-20.csv
+write_range_error_rate: 0.0130462646484375
+read_range_error_rate: 0.0124359130859375
+
+../data/sdr/data/3bpc/sdr-4wl-eval-chip2-8k-8-9-20.csv
+write_range_error_rate: 0.01495361328125
+read_range_error_rate: 0.014312744140625
+
+../data/sdr/data/3bpc/sdr-4wl-eval-chip2-8-9-20.csv
+write_range_error_rate: 0.022125244140625
+read_range_error_rate: 0.0212860107421875
+
+../data/sdr/data/3bpc/sdr-4wl-eval-chip1-8k-7-31-20.csv
+write_range_error_rate: 0.017333984375
+read_range_error_rate: 0.0166168212890625
+
+../data/fppv/data/2bpc/fppv-4wl-eval-chip1-8k-8-9-20.csv
+write_range_error_rate: 0.0723876953125
+read_range_error_rate: 0.02239990234375
+
+../data/fppv/data/2bpc/fppv-4wl-eval-chip2-8k-8-9-20.csv
+write_range_error_rate: 0.094329833984375
+read_range_error_rate: 0.0462646484375
+
+../data/fppv/data/2bpc/fppv-4wl-eval-chip2-8-9-20.csv
+write_range_error_rate: 0.044464111328125
+read_range_error_rate: 0.0243682861328125
+
+../data/fppv/data/2bpc/fppv-4wl-eval-chip1-8-7-20.csv
+write_range_error_rate: 0.03844745514463566
+read_range_error_rate: 0.026791163188087386
+
+../data/fppv/data/3bpc/fppv-4wl-eval-chip1-8k-7-31-20.csv
+write_range_error_rate: 0.0469818115234375
+read_range_error_rate: 0.04498291015625
+
+../data/fppv/data/3bpc/fppv-4wl-eval-chip2-8k-8-9-20.csv
+write_range_error_rate: 0.1578521728515625
+read_range_error_rate: 0.131195068359375
+
+../data/fppv/data/3bpc/fppv-4wl-eval-chip2-8-9-20.csv
+write_range_error_rate: 0.09588623046875
+read_range_error_rate: 0.0834197998046875
+
+../data/fppv/data/3bpc/fppv-4wl-eval-chip1-7-31-20.csv
+write_range_error_rate: 0.033303064219796
+read_range_error_rate: 0.032669524634130864
+
+../data/ispp/data/2bpc/ispp-4wl-eval-chip1-8k-8-9-20.csv
+write_range_error_rate: 0.02838134765625
+read_range_error_rate: 0.010345458984375
+
+../data/ispp/data/2bpc/ispp-4wl-eval-chip1-8-5-20.csv
+write_range_error_rate: 0.0366363525390625
+read_range_error_rate: 0.016845703125
+
+../data/ispp/data/2bpc/ispp-4wl-eval-chip2-8k-8-9-20.csv
+write_range_error_rate: 0.034088134765625
+read_range_error_rate: 0.013580322265625
+
+../data/ispp/data/2bpc/ispp-4wl-eval-chip2-8-9-20.csv
+write_range_error_rate: 0.037750244140625
+read_range_error_rate: 0.015838623046875
+
+../data/ispp/data/3bpc/ispp-4wl-eval-chip2-8k-8-9-20.csv
+write_range_error_rate: 0.0628662109375
+read_range_error_rate: 0.0528106689453125
+
+../data/ispp/data/3bpc/ispp-4wl-eval-chip2-8-9-20.csv
+write_range_error_rate: 0.02679443359375
+read_range_error_rate: 0.02349853515625
+
+../data/ispp/data/3bpc/ispp-4wl-eval-chip1-8k-7-31-20.csv
+write_range_error_rate: 0.0419464111328125
+read_range_error_rate: 0.0370330810546875
+
