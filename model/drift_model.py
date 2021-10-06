@@ -12,10 +12,10 @@ def init():
         for i in range(1, len(lines)):
             addr, timept, g, r = lines[i].split()
             item = [float(timept), float(g), int(r)]
-            if addr not in addr_dict.keys():
-                addr_dict[addr] = [item]
+            if int(addr) not in addr_dict.keys():
+                addr_dict[int(addr)] = [item]
             else:
-                addr_dict[addr].append(item)
+                addr_dict[int(addr)].append(item)
             item2 = [int(addr), float(g), int(r)]
             if timept not in time_dict.keys():
                 time_dict[timept] = [item2]
@@ -66,13 +66,30 @@ def show_small_range(time_stamp, time_dict):
         res2 = filter_res(res)
         paint(res2, 1000)
         plt.savefig("drift_figs/small_range/" + ts + ".pdf")
-
+    
+def show_diff_abs(addr_dict):
+    def compute_diff(val8, diffs):
+        new_val8 = sorted(val8, key=lambda x: x[0])
+        time0 = new_val8[0]
+        g0 = time0[1]
+        for i in range(1, 8):
+            real_diff = new_val8[i][1] - g0
+            diffs[i] = diffs.get(i, []) + [real_diff]
+    diffs = {}
+    for addr in range(80000, 96383+1):
+        if len(addr_dict[addr]) == 8:
+            compute_diff(addr_dict[addr], diffs)
+    
+    for i in range(1, 8):
+        paint(diffs[i], 1000)
+        plt.savefig("drift_figs/diff_abs/" + str(i) + ".pdf")
+    
 
 if __name__ == "__main__":
     init()
     res = extract_list(time_dict, 1)
     time_stamp = ["0.0", "0.01", "0.1", "1.0", "100.0", "1000.0", "10000.0", "100000.0"]
     # strange(time_stamp, time_dict)
-    show_original_distr(time_stamp, time_dict)
+    # show_original_distr(time_stamp, time_dict)
     # show_small_range(time_stamp, time_dict)
-    
+    show_diff_abs(addr_dict)
