@@ -43,9 +43,36 @@ def strange(time_stamp, time_dict):
         t.append(len(extract_list(time_dict, 1, ts)))
     print("Inequal measurement:", t)
 
+def paint(vals, bins):
+    sns.distplot(vals, kde=True,bins=bins)
+    # plt.show()
+
+def show_original_distr(time_stamp, time_dict):
+    for ts in time_stamp:
+        paint(extract_list(time_dict, 1, ts), 1000)
+        plt.savefig("drift_figs/original_distr/" + ts + ".pdf")
+
+def show_small_range(time_stamp, time_dict):
+    def filter_res(vals):
+        res = []
+        min_, max_ = 1e-6, 1e-5
+        for v in vals:
+            if min_ <= v and v <= max_:
+                res.append(v)
+        return res
+
+    for ts in time_stamp:
+        res = extract_list(time_dict, 1, ts)
+        res2 = filter_res(res)
+        paint(res2, 1000)
+        plt.savefig("drift_figs/small_range/" + ts + ".pdf")
+
+
 if __name__ == "__main__":
     init()
     res = extract_list(time_dict, 1)
     time_stamp = ["0.0", "0.01", "0.1", "1.0", "100.0", "1000.0", "10000.0", "100000.0"]
-    strange(time_stamp, time_dict)
+    # strange(time_stamp, time_dict)
+    show_original_distr(time_stamp, time_dict)
+    # show_small_range(time_stamp, time_dict)
     
