@@ -1,4 +1,5 @@
 import pprint
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -82,7 +83,36 @@ def show_diff_abs(addr_dict):
     
     for i in range(1, 8):
         paint(diffs[i], 1000)
-        plt.savefig("drift_figs/diff_abs/" + str(i) + ".pdf")
+        plt.savefig("drift_figs/diff_time/" + str(i) + ".pdf")
+
+def show_diff_g0(addr_dict):
+    min_, max_ = 0.0, 0.00035
+    interval = (max_ - min_) / 10
+    
+    def determine_bin(x, minv, maxv, interval):
+        for i in range(0, 10):
+            i_start = minv + i * interval
+            i_end = minv + (i + 1) * interval
+            if i_start <= x and x <= i_end:
+                return i
+        assert False, x
+    
+    def compute_diff(val8, diffs, time_stamp_idx=3):
+        new_val8 = sorted(val8, key=lambda x: x[0])
+        time0 = new_val8[0]
+        g0 = time0[1]
+        real_diff = new_val8[time_stamp_idx][1] - g0
+        bin_idx = determine_bin(g0, min_, max_, interval)
+        diffs[bin_idx] = diffs.get(bin_idx, []) + [real_diff]
+    
+    diffs = {}
+    for addr in range(80000, 96383+1):
+        if len(addr_dict[addr]) == 8:
+            compute_diff(addr_dict[addr], diffs)
+    
+    for i in range(8, 9):# (0, 7), (7, 8), (8, 9)
+        paint(diffs[i], 1000)
+        plt.savefig("drift_figs/diff_g0/" + str(i) + ".pdf")
     
 
 if __name__ == "__main__":
@@ -92,4 +122,5 @@ if __name__ == "__main__":
     # strange(time_stamp, time_dict)
     # show_original_distr(time_stamp, time_dict)
     # show_small_range(time_stamp, time_dict)
-    show_diff_abs(addr_dict)
+    # show_diff_abs(addr_dict)
+    show_diff_g0(addr_dict)
