@@ -86,11 +86,11 @@ def show_diff_abs(addr_dict):
         plt.savefig("drift_figs/diff_time/" + str(i) + ".pdf")
 
 def show_diff_g0(addr_dict):
-    min_, max_ = 0.0, 0.00035
-    interval = (max_ - min_) / 10
+    min_, max_ = 0.0, 0.00031
+    interval = (max_ - min_) / 50
     
     def determine_bin(x, minv, maxv, interval):
-        for i in range(0, 10):
+        for i in range(0, 50):
             i_start = minv + i * interval
             i_end = minv + (i + 1) * interval
             if i_start <= x and x <= i_end:
@@ -110,9 +110,11 @@ def show_diff_g0(addr_dict):
         if len(addr_dict[addr]) == 8:
             compute_diff(addr_dict[addr], diffs)
     
-    for i in range(8, 9):# (0, 7), (7, 8), (8, 9)
-        paint(diffs[i], 1000)
+    for i in range(0, 50):
+        paint(diffs[i], 100)
         plt.savefig("drift_figs/diff_g0/" + str(i) + ".pdf")
+        if i >= 38:
+            plt.close()
     
 
 if __name__ == "__main__":
