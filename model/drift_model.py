@@ -52,12 +52,27 @@ def compute_d():
                 d2[g_0] = {}
             d2[g_0][t] = diff
 
-def compute_sigma(num = 100):
+def compute_std(dic, keys):
+    res = []
+    for k in keys:
+        res.append(dic[k])
+    return np.std(res)
+
+def compute_sigma(num=50):
     for t in times[1:]:
         if t not in s1.keys():
             s1[t] = {}
         all_g = sorted(list(d1[t].keys()))
-        print(all_g)
+        for idx in range(num, len(all_g)-num):
+            g0 = all_g[idx]
+            std = compute_std(d1[t], all_g[idx-num:idx+num])
+            s1[t][g0] = std
+
+            if g0 not in s2.keys():
+                s2[g0] = {}
+            s2[g0][t] = std
+
+
 
 if __name__ == "__main__":
     init()
