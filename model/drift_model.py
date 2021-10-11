@@ -1,5 +1,8 @@
 import numpy as np
 import pprint
+import seaborn as sns
+import matplotlib.pyplot as plt
+import scipy.stats as stats
 
 # header:
 # addr	timept	g (conductance)  range
@@ -52,26 +55,40 @@ def compute_d():
                 d2[g_0] = {}
             d2[g_0][t] = diff
 
+good = 0
+total = 0
 def compute_std(dic, keys):
+    global good, total
     res = []
     for k in keys:
         res.append(dic[k])
+    test = stats.normaltest(res)
+    # print(test)
+    if test.pvalue > 1e-3:
+        good = good + 1
+    else:
+        # sns.distplot(res, kde=True,bins=100)
+        # plt.show()
+        pass
+    total += 1
     return np.std(res)
 
-def compute_sigma(num=50):
+def compute_sigma(bins = 500):
     for t in times[1:]:
         if t not in s1.keys():
             s1[t] = {}
         all_g = sorted(list(d1[t].keys()))
-        for idx in range(num, len(all_g)-num):
-            g0 = all_g[idx]
-            std = compute_std(d1[t], all_g[idx-num:idx+num])
-            s1[t][g0] = std
+        interval = len(all_g) // bins
+        for idx in range(0, bins):
+            low_idx = idx * interval
+            high_idx = min((idx + 1) * interval, len(all_g))
+            std = compute_std(d1[t], all_g[low_idx:high_idx])
+            s1[t][idx] = std
 
-            if g0 not in s2.keys():
-                s2[g0] = {}
-            s2[g0][t] = std
-
+            if idx not in s2.keys():
+                s2[idx] = {}
+            s2[idx][t] = std
+        print(good, total, good / total)
 
 
 if __name__ == "__main__":
