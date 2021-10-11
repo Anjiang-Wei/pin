@@ -63,26 +63,37 @@ def compute_std(dic, keys):
     res = []
     for k in keys:
         res.append(dic[k])
-    test = stats.normaltest(res)
-    # print(test)
-    if test.pvalue > 1e-3:
-        good = good + 1
-    else:
-        # sns.distplot(res, kde=True,bins=100)
-        # plt.show()
+    assert len(res) >= 1, res
+    try:
+        test = stats.normaltest(res)
+        # print(test)
+        if test.pvalue > 1e-3:
+            good = good + 1
+        # else:
+        #     # sns.distplot(res, kde=True,bins=100)
+        #     # plt.show()
+        #     pass
+        total += 1
+    except Exception as e:
         pass
-    total += 1
     return np.std(res)
+
+def find_index(vals, low_val):
+    for i in range(len(vals)):
+        if vals[i] >= low_val:
+            return i
+    assert False, "Not Found, low_val is too high!"
 
 def compute_sigma(bins = 100):
     for t in times[1:]:
         if t not in s1.keys():
             s1[t] = {}
         all_g = sorted(list(d1[t].keys()))
-        interval = len(all_g) // bins
+        interval = (max(all_g) - min(all_g)) / bins
         for idx in range(0, bins):
-            low_idx = idx * interval
-            high_idx = min((idx + 1) * interval, len(all_g))
+            low_idx = find_index(all_g, min(all_g) + idx * interval)
+            high_idx = find_index(all_g, min(all_g) + (idx + 1) * interval)
+            high_idx = max(low_idx + 1, high_idx)
             std = compute_std(d1[t], all_g[low_idx:high_idx])
             s1[t][idx] = std
 
