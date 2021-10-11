@@ -3,6 +3,7 @@ import pprint
 import seaborn as sns
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+from mpl_toolkits.mplot3d import Axes3D
 
 # header:
 # addr	timept	g (conductance)  range
@@ -73,7 +74,7 @@ def compute_std(dic, keys):
     total += 1
     return np.std(res)
 
-def compute_sigma(bins = 500):
+def compute_sigma(bins = 100):
     for t in times[1:]:
         if t not in s1.keys():
             s1[t] = {}
@@ -90,8 +91,40 @@ def compute_sigma(bins = 500):
             s2[idx][t] = std
         print(good, total, good / total)
 
+def figure_2d_g():
+    y, z = [], []
+    for yy in s2.keys():
+        y.append(yy)
+        z.append(s1[0.1][yy])
+    y, z = np.array(y), np.array(z)
+    plt.plot(y, z)
+    plt.show()
+
+def compute_t():
+    for t in s1.keys():
+        vals = list(s1[t].values())
+        print(t, sum(vals) / len(vals))
+
+
+def figure_3d():
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    x, y, z = [], [], []
+    for xx in s1.keys():
+        for yy in s2.keys():
+            x.append(xx)
+            y.append(yy)
+            z.append(s1[xx][yy])
+    x, y, z = np.array(x), np.array(y), np.array(z)
+    ax.plot_trisurf(x, y, z)
+    plt.show()
+
+
 
 if __name__ == "__main__":
     init()
     compute_d()
     compute_sigma()
+    figure_2d_g()
+    compute_t()
+    # figure_3d()
