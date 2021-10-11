@@ -58,7 +58,9 @@ def compute_d():
 
 good = 0
 total = 0
+last_normal_value = 0.0
 def compute_std(dic, keys):
+    global last_normal_value
     global good, total
     res = []
     for k in keys:
@@ -74,8 +76,9 @@ def compute_std(dic, keys):
         #     # plt.show()
         #     pass
         total += 1
-    except Exception as e:
-        pass
+    except:
+        return last_normal_value
+    last_normal_value = np.std(res)
     return np.std(res)
 
 def find_index(vals, low_val):
@@ -84,23 +87,33 @@ def find_index(vals, low_val):
             return i
     assert False, "Not Found, low_val is too high!"
 
+def export(vals, append=True):
+    vals_ = list(map(str, vals))
+    with open("conf", "a" if append else "w") as fout:
+        fout.write(",".join(vals_) + "\n")
+
 def compute_sigma(bins = 100):
+    all_g_t = sorted(list(d1[times[-1]].keys()))
+    interval = (max(all_g_t) - min(all_g_t)) / bins
+    export([min(all_g_t), max(all_g_t), bins], False)
     for t in times[1:]:
         if t not in s1.keys():
             s1[t] = {}
         all_g = sorted(list(d1[t].keys()))
-        interval = (max(all_g) - min(all_g)) / bins
         for idx in range(0, bins):
-            low_idx = find_index(all_g, min(all_g) + idx * interval)
-            high_idx = find_index(all_g, min(all_g) + (idx + 1) * interval)
+            low_idx = find_index(all_g, min(all_g_t) + idx * interval)
+            high_idx = find_index(all_g, min(all_g_t) + (idx + 1) * interval)
             high_idx = max(low_idx + 1, high_idx)
             std = compute_std(d1[t], all_g[low_idx:high_idx])
             s1[t][idx] = std
+
+            export([t, idx, std])
 
             if idx not in s2.keys():
                 s2[idx] = {}
             s2[idx][t] = std
         print(good, total, good / total)
+    
 
 def figure_2d_g():
     y, z = [], []
