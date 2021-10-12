@@ -1,4 +1,4 @@
-
+import numpy as np
 
 mini = 0
 maxi = 0
@@ -50,7 +50,8 @@ def get_sigma(g0, t):
 
 def drift(g0, t):
     sig = get_sigma(g0, t)
-    print(sig)
+    diff = np.random.normal(0, sig)
+    print(g0 + diff)
 
 
 if __name__ == "__main__":
