@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 mini = 0
 maxi = 0
@@ -38,7 +39,7 @@ def get_sigma(g0, t):
 
     idx = get_bin(g0)
     if t in timestamps:
-        print(t, idx)
+        # print(t, idx)
         return sigma[t][idx]
     elif t < timestamps[0]:
         return sigma[timestamps[0]][idx]
@@ -51,10 +52,25 @@ def get_sigma(g0, t):
 def drift(g0, t):
     sig = get_sigma(g0, t)
     diff = np.random.normal(0, sig)
-    print(g0 + diff)
+    return g0 + diff
 
+def test_drift(times=1000, bins=1000):
+    eps = (maxi - mini) / bins
+    start = mini
+    gs = []
+    sigs = []
+    while start < maxi:
+        res = []
+        for t in range(times):
+            res.append(drift(start, 0.1))
+        sigs.append(np.std(res))
+        gs.append(start)
+        start += eps
+    plt.plot(gs, sigs)
+    plt.show()
 
 if __name__ == "__main__":
     load_param()
-    g0 = float(input("Write g0 between " + str(mini) + ", " + str(maxi) + "\n"))
-    drift(g0, 0.1)
+    # g0 = float(input("Write g0 between " + str(mini) + ", " + str(maxi) + "\n"))
+    # drift(g0, 0.1)
+    test_drift()
