@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import norm
 
 mini = 0
 maxi = 0
@@ -69,8 +70,13 @@ def test_drift(times=1000, bins=1000):
     plt.plot(gs, sigs)
     plt.show()
 
+def test_df():
+    vals = norm.ppf([0.001, 0.5, 0.999], loc=0, scale=1)
+    print(np.allclose([0.001, 0.5, 0.999], norm.cdf(vals, loc=0, scale=1)))
+
 if __name__ == "__main__":
     load_param()
     # g0 = float(input("Write g0 between " + str(mini) + ", " + str(maxi) + "\n"))
     # drift(g0, 0.1)
-    test_drift()
+    # test_drift()
+    test_df()
