@@ -24,13 +24,14 @@ def load_param():
             sigma[t][idx] = sig
         timestamps = sorted(list(sigma.keys()))
 
-def get_sigma(g0, t):
-    def get_bin(g):
-        assert mini <= g and g <= maxi
-        idx = (g - mini) / interval
-        assert int(idx) < bins
-        return int(idx)
 
+def get_bin(g):
+    assert mini <= g and g <= maxi
+    idx = (g - mini) / interval
+    assert int(idx) < bins
+    return int(idx)
+
+def get_sigma(g0, t):
     def get_tidx_weights(stmp):
         for i in range(len(timestamps) - 1):
             if timestamps[i] <= stmp and stmp < timestamps[i+1]:
@@ -70,13 +71,41 @@ def test_drift(times=1000, bins=1000):
     plt.plot(gs, sigs)
     plt.show()
 
-def test_df():
-    vals = norm.ppf([0.001, 0.5, 0.999], loc=0, scale=1)
-    print(np.allclose([0.001, 0.5, 0.999], norm.cdf(vals, loc=0, scale=1)))
+def get_max_sigma(w1, w2, t=0.1):
+    '''
+    Given the range of conductance, w1 and w2 (w1 < w2), return the maximum sigma within the range
+    Currently ignoring the effect of time (t)
+    '''
+    idx1, idx2 = get_bin(w1), get_bin(w2)
+    res = []
+    for idx in range(idx1, idx2+1):
+        res.append(sigma[t][idx])
+    return max(res)
+
+def prob2read(w1, w2, prob):
+    '''
+    w1: low write conductance
+    w2: high write conductance
+    prob: the probability that the final g_t will be within the read range [success rate of read]
+
+    Return:
+    the read range in which the final conductance value falls in, with the successful rate of prob
+
+    Implementation:
+    First compute the maximum sigma within [w1, w2].
+    Then the low/high value is obtained by Normal(w1, sigma) / Normal(w2, sigma) with Percent point function
+    '''
+    prob1 = 1 - prob # percent point corresponding to low value of read range
+    prob2 = prob # percent point corresponding to high value of read range
+    sigma = get_max_sigma(w1, w2)
+    r1 = norm.ppf(prob1, loc=w1, scale=sigma)
+    r2 = norm.ppf(prob2, loc=w2, scale=sigma)
+    return r1, r2
+
 
 if __name__ == "__main__":
     load_param()
     # g0 = float(input("Write g0 between " + str(mini) + ", " + str(maxi) + "\n"))
     # drift(g0, 0.1)
     # test_drift()
-    test_df()
+    print(prob2read(1.0e-5, 1.1e-5, 0.8))
