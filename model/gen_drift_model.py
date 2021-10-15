@@ -23,6 +23,9 @@ d2 = {}
 s1 = {}
 s2 = {}
 
+# All the conductance (g) are converted to resistance if turning useR on
+useR = True
+
 def init():
     global times
     with open("../data/drift/modelA.tsv", "r") as fin:
@@ -30,6 +33,8 @@ def init():
         for i in range(1, len(lines)):
             addr, timept, conductance, r = lines[i].split()
             addr, timept, conductance = int(addr), float(timept), float(conductance)
+            if useR:
+                conductance = 1 / conductance
             if timept not in g1.keys():
                 g1[timept] = {}
             g1[timept][addr] = conductance
@@ -44,6 +49,9 @@ def init():
             addrs.append(addr)
 
 def compute_d():
+    '''
+    Compute the difference w.r.t time, given the same address [same initial g0]
+    '''
     for t in times[1:]:
         if t not in d1.keys():
             d1[t] = {}
@@ -93,6 +101,10 @@ def export(vals, append=True):
         fout.write(",".join(vals_) + "\n")
 
 def compute_sigma(bins = 100):
+    '''
+    Given the number of bins (to segment [min_g, max_g]), compute the sigma for each bin
+    Output: s1, s2
+    '''
     all_g_t = sorted(list(d1[times[-1]].keys()))
     interval = (max(all_g_t) - min(all_g_t)) / bins
     export([min(all_g_t), max(all_g_t), bins], False)
@@ -104,6 +116,7 @@ def compute_sigma(bins = 100):
             low_idx = find_index(all_g, min(all_g_t) + idx * interval)
             high_idx = find_index(all_g, min(all_g_t) + (idx + 1) * interval)
             high_idx = max(low_idx + 1, high_idx)
+            print(idx, high_idx - low_idx)
             std = compute_std(d1[t], all_g[low_idx:high_idx])
             s1[t][idx] = std
 
@@ -116,6 +129,9 @@ def compute_sigma(bins = 100):
     
 
 def figure_2d_g():
+    '''
+    plot the standard deviation ~ g0
+    '''
     y, z = [], []
     for yy in s2.keys():
         y.append(yy)
