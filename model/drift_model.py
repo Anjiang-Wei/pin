@@ -11,10 +11,10 @@ timestamps = []
 
 def load_param():
     global mini, maxi, bins, interval, timestamps
-    with open("conf", "r") as fin:
+    with open("conf2", "r") as fin:
         lines = fin.readlines()
-        mini, maxi, bins = lines[0].split(",")
-        mini, maxi, bins = float(mini), float(maxi), int(bins)
+        maxi, mini, bins = lines[0].split(",")
+        maxi, mini, bins = float(maxi), float(mini), int(bins)
         interval = (maxi - mini) / bins
         for i in range(1, len(lines)):
             t, idx, sig = lines[i].split(",")
@@ -25,13 +25,13 @@ def load_param():
         timestamps = sorted(list(sigma.keys()))
 
 
-def get_bin(g):
-    assert mini <= g and g <= maxi
-    idx = (g - mini) / interval
+def get_bin(r):
+    assert mini <= r and r <= maxi
+    idx = (r - mini) / interval
     assert int(idx) < bins
     return int(idx)
 
-def get_sigma(g0, t):
+def get_sigma(r0, t):
     def get_tidx_weights(stmp):
         for i in range(len(timestamps) - 1):
             if timestamps[i] <= stmp and stmp < timestamps[i+1]:
@@ -39,7 +39,7 @@ def get_sigma(g0, t):
                 weight2 = (stmp - timestamps[i]) / (timestamps[i+1] - timestamps[i])
                 return i, weight1, weight2
 
-    idx = get_bin(g0)
+    idx = get_bin(r0)
     if t in timestamps:
         # print(t, idx)
         return sigma[t][idx]
@@ -51,24 +51,24 @@ def get_sigma(g0, t):
         tidx, w1, w2 = get_tidx_weights(timestamps)
         return w1 * sigma[timestamps[tidx]][idx] + w2 * sigma[timestamps[tidx+1]][idx]
 
-def drift(g0, t):
-    sig = get_sigma(g0, t)
+def drift(r0, t):
+    sig = get_sigma(r0, t)
     diff = np.random.normal(0, sig)
-    return g0 + diff
+    return r0 + diff
 
-def test_drift(times=1000, bins=1000):
+def test_drift(times=50, bins=50, timppt=0.1):
     eps = (maxi - mini) / bins
     start = mini
-    gs = []
+    rs = []
     sigs = []
     while start < maxi:
         res = []
         for t in range(times):
-            res.append(drift(start, 0.1))
+            res.append(drift(start, timppt))
         sigs.append(np.std(res))
-        gs.append(start)
+        rs.append(start)
         start += eps
-    plt.plot(gs, sigs)
+    plt.plot(rs, sigs)
     plt.show()
 
 def get_max_sigma(w1, w2, t=0.1):
@@ -84,9 +84,9 @@ def get_max_sigma(w1, w2, t=0.1):
 
 def prob2read(w1, w2, prob):
     '''
-    w1: low write conductance
-    w2: high write conductance
-    prob: the probability that the final g_t will be within the read range [success rate of read]
+    w1: low write resistance
+    w2: high write resistance
+    prob: the probability that the final R_t will be within the read range [success rate of read]
 
     Return:
     the read range in which the final conductance value falls in, with the successful rate of prob
@@ -105,7 +105,9 @@ def prob2read(w1, w2, prob):
 
 if __name__ == "__main__":
     load_param()
-    # g0 = float(input("Write g0 between " + str(mini) + ", " + str(maxi) + "\n"))
-    # drift(g0, 0.1)
-    # test_drift()
-    print(prob2read(1.0e-5, 1.1e-5, 0.8))
+    r0 = float(input("Write r0 between " + str(mini) + ", " + str(maxi) + "\n"))
+    print(drift(r0, 0.1))
+    for timept in timestamps:
+        print(timept)
+        test_drift(timppt=timept)
+    print(prob2read(5000, 6000, 0.8))
