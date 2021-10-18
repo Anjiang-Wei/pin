@@ -80,9 +80,9 @@ def compute_std(dic, keys):
         if test.pvalue > 1e-3:
             good = good + 1
         # else:
-        #     # sns.distplot(res, kde=True,bins=100)
-        #     # plt.show()
-        #     pass
+            # sns.distplot(res, kde=True,bins=100)
+            # plt.show()
+            # pass
         total += 1
     except:
         return last_normal_value
@@ -97,26 +97,28 @@ def find_index(vals, low_val):
 
 def export(vals, append=True):
     vals_ = list(map(str, vals))
-    with open("conf", "a" if append else "w") as fout:
+    with open("conf2", "a" if append else "w") as fout:
         fout.write(",".join(vals_) + "\n")
 
-def compute_sigma(bins = 100):
+def compute_sigma(bins = 30):
     '''
     Given the number of bins (to segment [min_g, max_g]), compute the sigma for each bin
     Output: s1, s2
     '''
-    all_g_t = sorted(list(d1[times[-1]].keys()))
-    interval = (max(all_g_t) - min(all_g_t)) / bins
-    export([min(all_g_t), max(all_g_t), bins], False)
+    global total, good
+    # all_g_t = sorted(list(d1[times[-1]].keys()))
+    max_val, min_val = 30 * 1e3, 3.227 * 1e3 # max(all_g_t), min(all_g_t)
+    interval = (max_val - min_val) / bins
+    export([max_val, min_val, bins], False)
     for t in times[1:]:
         if t not in s1.keys():
             s1[t] = {}
         all_g = sorted(list(d1[t].keys()))
         for idx in range(0, bins):
-            low_idx = find_index(all_g, min(all_g_t) + idx * interval)
-            high_idx = find_index(all_g, min(all_g_t) + (idx + 1) * interval)
+            low_idx = find_index(all_g, min_val + idx * interval)
+            high_idx = find_index(all_g, min_val + (idx + 1) * interval)
             high_idx = max(low_idx + 1, high_idx)
-            print(idx, high_idx - low_idx)
+            # print(idx, high_idx - low_idx)
             std = compute_std(d1[t], all_g[low_idx:high_idx])
             s1[t][idx] = std
 
@@ -125,20 +127,30 @@ def compute_sigma(bins = 100):
             if idx not in s2.keys():
                 s2[idx] = {}
             s2[idx][t] = std
-        print(good, total, good / total)
+        print("good normal: ", good, total, good / total)
+        good = total = 0
     
 
-def figure_2d_g():
-    '''
-    plot the standard deviation ~ g0
-    '''
+def figure_d_g():
     y, z = [], []
-    for yy in s2.keys():
+    print(min(d2.keys()), max(d2.keys()))
+    for yy in list(filter(lambda x: x > 0 and x < 30 * 1e3, d1[0.1].keys())):
         y.append(yy)
-        z.append(s1[0.1][yy])
-    y, z = np.array(y), np.array(z)
-    plt.plot(y, z)
+        z.append(d1[0.1][yy])
+    y_, z_ = np.array(y), np.array(z)
+    plt.plot(y_, z_, 'ro')
     plt.show()
+
+def figure_s_g():
+    y, z = [], []
+    print(min(s2.keys()), max(s2.keys()))
+    for tt in s1.keys():
+        for yy in s1[tt].keys():
+            y.append(yy)
+            z.append(s1[tt][yy])
+            y_, z_ = np.array(y), np.array(z)
+        plt.plot(y_, z_)
+        plt.show()
 
 def compute_t():
     for t in s1.keys():
@@ -165,6 +177,7 @@ if __name__ == "__main__":
     init()
     compute_d()
     compute_sigma()
-    figure_2d_g()
+    figure_d_g()
+    figure_s_g()
     compute_t()
     # figure_3d()
