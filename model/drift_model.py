@@ -95,8 +95,9 @@ def prob2read(w1, w2, prob):
     First compute the maximum sigma within [w1, w2].
     Then the low/high value is obtained by Normal(w1, sigma) / Normal(w2, sigma) with Percent point function
     '''
-    prob1 = 1 - prob # percent point corresponding to low value of read range
-    prob2 = prob # percent point corresponding to high value of read range
+    prob1 = (1 - prob) / 2 # percent point corresponding to low value of read range
+    # Why divide by 2? Because prob is the overall one while prob1 is only one part
+    prob2 = 1 - prob1 # percent point corresponding to high value of read range
     sigma = get_max_sigma(w1, w2)
     r1 = norm.ppf(prob1, loc=w1, scale=sigma)
     r2 = norm.ppf(prob2, loc=w2, scale=sigma)
