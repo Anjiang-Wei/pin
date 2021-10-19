@@ -29,6 +29,11 @@ class Level(object):
     
     @staticmethod
     def longest_non_overlap(all_levels):
+        '''
+        This is inaccurate greedy algorithm
+        Assumption:
+            interval of read ranges increases with the resistance
+        '''
         res = []
         sorted_levels = Level.sort_by_r1(all_levels)
         res.append(sorted_levels[0])
@@ -41,8 +46,6 @@ class Level(object):
         return res
 
 
-
-
 def find_densest_repr(Rmin, Rmax, prob, write_width, exact_width=True):
     '''
     Arguments:
@@ -53,7 +56,7 @@ def find_densest_repr(Rmin, Rmax, prob, write_width, exact_width=True):
         exact_width: boolean value. Default is true, then no need to search w2 (high write resistance)
 
     Return:
-        A list of Level objects [l_0, l_1, ..., l_{n-1}]
+        The densest representation (highest n)
     
     Implementation:
         TODO: exact_width not considered
@@ -63,10 +66,9 @@ def find_densest_repr(Rmin, Rmax, prob, write_width, exact_width=True):
         Then invoke prob2read with write range and prob as params -> get read range
         Save all the potential Level computed above (all_levels)
         [So far, n not used (due to greedy algorithm)]
-        All non-overlapping levels as one solution (one Level object)
-        There can be multiple solutions
+        Finally compute the longest non_overlapping levels (to get densest repr)
     '''
-    delta = 50
+    delta = 1
     all_levels = []
     i, Rcenter = 1, Rmin
     while True:
@@ -84,7 +86,7 @@ def find_densest_repr(Rmin, Rmax, prob, write_width, exact_width=True):
 if __name__ == "__main__":
     drift_model.load_param()
     prob = 0.98
-    write_width = 50
+    write_width = 10
     solutions = find_densest_repr(drift_model.mini, drift_model.maxi, prob, write_width)
     for item in solutions:
         print(item)
