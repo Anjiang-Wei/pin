@@ -97,6 +97,7 @@ def draw():
         Manual_Rmaxs = np.array([5.1, 6.48, 14, 10000])
     Write_Rmins = np.array(lows) / 1000
     Write_Rmaxs = np.array(highs) / 1000
+    print("write range", (Write_Rmaxs - Write_Rmins) * 1000)
     Manual_Gmaxs, Manual_Gmins = 1 / Manual_Rmins / 1000, 1 / Manual_Rmaxs / 1000
     Write_Gmaxs, Write_Gmins = 1 / Write_Rmins / 1000, 1 / Write_Rmaxs / 1000
 
@@ -135,4 +136,4 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     data_init()
     data_validate()
-    # draw()
+    draw()

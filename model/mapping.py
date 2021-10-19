@@ -1,20 +1,32 @@
-from os import stat
 import drift_model
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 class Level(object):
     '''
     Level is represented as Read Range [r1, r2] and Write Range [w1, w2]
     [w1, w2] should be within the range of [r1, r2] 
     '''
-    def __init__(self, r1, r2, w1, w2):
+    def __init__(self, r1, r2, w1, w2, sigma=0, prob=0):
         assert r1 < w1 and w1 < w2 and w2 < r2
         self.r1 = r1
         self.r2 = r2
         self.w1 = w1
         self.w2 = w2
+        self.sigma = sigma
+        self.prob = prob
     
     def __str__(self):
         return "Read:[%d,%d], Write:[%d,%d]" % (self.r1, self.r2, self.w1, self.w2)
+    
+    def draw(levels):
+        for i in range(len(levels)):
+            color = sns.color_palette(n_colors=len(levels))[i]
+            plt.axvline(levels[i].r1, color=color, linestyle=':', linewidth=1)
+            plt.axvline(levels[i].r2, color=color, linestyle=':', linewidth=1)
+            plt.axvline(levels[i].w1, color=color, linestyle='-', linewidth=1)
+            plt.axvline(levels[i].w2, color=color, linestyle='-', linewidth=1)
+        plt.show()
 
     @staticmethod
     def overlap(A, B) -> bool:
@@ -24,8 +36,8 @@ class Level(object):
             return False
     
     @staticmethod
-    def sort_by_r1(all_levels):
-        return sorted(all_levels, key=lambda x: x.r1)
+    def sort_by_mean(all_levels):
+        return sorted(all_levels, key=lambda x: (x.w1 + x.w2) / 2)
     
     @staticmethod
     def longest_non_overlap(all_levels):
@@ -35,7 +47,7 @@ class Level(object):
             interval of read ranges increases with the resistance
         '''
         res = []
-        sorted_levels = Level.sort_by_r1(all_levels)
+        sorted_levels = Level.sort_by_mean(all_levels)
         res.append(sorted_levels[0])
         cur = sorted_levels[0]
         for i in range(1, len(sorted_levels)):
@@ -68,7 +80,7 @@ def find_densest_repr(Rmin, Rmax, prob, write_width, exact_width=True):
         [So far, n not used (due to greedy algorithm)]
         Finally compute the longest non_overlapping levels (to get densest repr)
     '''
-    delta = 1
+    delta = 10
     all_levels = []
     i, Rcenter = 1, Rmin
     while True:
@@ -76,8 +88,9 @@ def find_densest_repr(Rmin, Rmax, prob, write_width, exact_width=True):
         w1, w2 = Rcenter - write_width / 2, Rcenter + write_width / 2
         if w2 >= Rmax:
             break
+        sigma = drift_model.get_max_sigma(w1, w2)
         r1, r2 = drift_model.prob2read(w1, w2, prob)
-        all_levels.append(Level(r1, r2, w1, w2))
+        all_levels.append(Level(r1, r2, w1, w2, sigma, prob))
         i += 1
     return Level.longest_non_overlap(all_levels)
 
@@ -85,9 +98,11 @@ def find_densest_repr(Rmin, Rmax, prob, write_width, exact_width=True):
 
 if __name__ == "__main__":
     drift_model.load_param()
-    prob = 0.98
-    write_width = 10
-    solutions = find_densest_repr(drift_model.mini, drift_model.maxi, prob, write_width)
-    for item in solutions:
-        print(item)
+    prob = 0.99
+    write_width = 100
+    print(drift_model.mini, drift_model.maxi)
+    mini = drift_model.mini
+    maxi = drift_model.maxi
+    solutions = find_densest_repr(drift_model.mini, maxi, prob, write_width)
+    # Level.draw(solutions)
     print(len(solutions))

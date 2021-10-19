@@ -26,10 +26,12 @@ def load_param():
 
 
 def get_bin(r):
-    assert mini <= r and r <= maxi
-    idx = (r - mini) / interval
-    assert int(idx) < bins
-    return int(idx)
+    # assert mini <= r and r <= maxi
+    idx = int((r - mini) / interval)
+    if idx < 0:
+        idx = 0
+    assert idx < bins
+    return idx
 
 def get_sigma(r0, t):
     def get_tidx_weights(stmp):
