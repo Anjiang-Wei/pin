@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 
+model_char = "B"
 mini = 0
 maxi = 0
 bins = 0
@@ -11,7 +12,7 @@ timestamps = []
 
 def load_param():
     global mini, maxi, bins, interval, timestamps
-    with open("conf2", "r") as fin:
+    with open("conf" + model_char, "r") as fin:
         lines = fin.readlines()
         maxi, mini, bins = lines[0].split(",")
         maxi, mini, bins = float(maxi), float(mini), int(bins)

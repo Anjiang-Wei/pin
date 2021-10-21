@@ -25,10 +25,16 @@ s2 = {}
 
 # All the conductance (g) are converted to resistance if turning useR on
 useR = True
+model_char = "B"
+config = {
+    "A": [30 * 1e3, 3.227 * 1e3], # maxi, mini of resistance range
+    "B": [50 * 1e3, 6 * 1e3]
+}
 
 def init():
+    print("For model:", model_char)
     global times
-    with open("../data/drift/modelA.tsv", "r") as fin:
+    with open("../data/drift/model" + model_char + ".tsv", "r") as fin:
         lines = fin.readlines()
         for i in range(1, len(lines)):
             addr, timept, conductance, r = lines[i].split()
@@ -97,7 +103,7 @@ def find_index(vals, low_val):
 
 def export(vals, append=True):
     vals_ = list(map(str, vals))
-    with open("conf2", "a" if append else "w") as fout:
+    with open("conf" + model_char, "a" if append else "w") as fout:
         fout.write(",".join(vals_) + "\n")
 
 def compute_sigma(bins = 30):
@@ -107,7 +113,7 @@ def compute_sigma(bins = 30):
     '''
     global total, good
     # all_g_t = sorted(list(d1[times[-1]].keys()))
-    max_val, min_val = 30 * 1e3, 3.227 * 1e3 # max(all_g_t), min(all_g_t)
+    max_val, min_val = config[model_char] # max(all_g_t), min(all_g_t)
     interval = (max_val - min_val) / bins
     export([max_val, min_val, bins], False)
     for t in times[1:]:
@@ -118,7 +124,8 @@ def compute_sigma(bins = 30):
             low_idx = find_index(all_g, min_val + idx * interval)
             high_idx = find_index(all_g, min_val + (idx + 1) * interval)
             high_idx = max(low_idx + 1, high_idx)
-            # print(idx, high_idx - low_idx)
+            if t == 0.01:
+                print(idx, high_idx - low_idx)
             std = compute_std(d1[t], all_g[low_idx:high_idx])
             s1[t][idx] = std
 
@@ -134,7 +141,7 @@ def compute_sigma(bins = 30):
 def figure_d_g():
     y, z = [], []
     print(min(d2.keys()), max(d2.keys()))
-    for yy in list(filter(lambda x: x > 0 and x < 30 * 1e3, d1[0.1].keys())):
+    for yy in list(filter(lambda x: x < config[model_char][0], d1[0.1].keys())):
         y.append(yy)
         z.append(d1[0.1][yy])
     y_, z_ = np.array(y), np.array(z)
@@ -145,12 +152,14 @@ def figure_s_g():
     y, z = [], []
     print(min(s2.keys()), max(s2.keys()))
     for tt in s1.keys():
+        print(tt)
         for yy in s1[tt].keys():
             y.append(yy)
             z.append(s1[tt][yy])
             y_, z_ = np.array(y), np.array(z)
         plt.plot(y_, z_)
         plt.show()
+        break
 
 def compute_t():
     for t in s1.keys():

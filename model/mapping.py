@@ -97,12 +97,11 @@ def find_densest_repr(Rmin, Rmax, prob, write_width, exact_width=True):
     
 
 if __name__ == "__main__":
+    print("For Model", drift_model.model_char)
     drift_model.load_param()
-    prob = 0.99
+    prob = 0.95
     write_width = 100
     print(drift_model.mini, drift_model.maxi)
-    mini = drift_model.mini
-    maxi = drift_model.maxi
-    solutions = find_densest_repr(drift_model.mini, maxi, prob, write_width)
-    # Level.draw(solutions)
+    solutions = find_densest_repr(drift_model.mini, drift_model.maxi, prob, write_width)
+    Level.draw(solutions)
     print(len(solutions))
