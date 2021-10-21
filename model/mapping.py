@@ -45,6 +45,7 @@ class Level(object):
         with open(fin, "r") as f:
             jsonstr = f.readlines()[0]
             levels = json.loads(jsonstr, object_hook=Level.dict2level)
+            Level.draw(levels)
             print(len(levels))
 
     @staticmethod
@@ -105,6 +106,9 @@ def find_densest_repr(Rmin, Rmax, prob, write_width, exact_width=True):
     while True:
         Rcenter = Rmin + i * delta
         w1, w2 = Rcenter - write_width / 2, Rcenter + write_width / 2
+        if w1 < Rmin:
+            i += 1
+            continue
         if w2 >= Rmax:
             break
         sigma = drift_model.get_max_sigma(w1, w2)
