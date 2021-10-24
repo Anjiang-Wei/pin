@@ -126,7 +126,7 @@ if __name__ == "__main__":
     write_width = 100
     print(drift_model.mini, drift_model.maxi)
     solutions = find_densest_repr(drift_model.mini, drift_model.maxi, prob, write_width)
-    # Level.draw(solutions)
+    Level.draw(solutions)
     Level.export_to_file(solutions)
     Level.load_from_file()
     print(len(solutions))

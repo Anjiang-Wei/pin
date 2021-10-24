@@ -109,6 +109,7 @@ def prob2read(w1, w2, prob):
 
 if __name__ == "__main__":
     load_param()
+    print(timestamps)
     r0 = float(input("Write r0 between " + str(mini) + ", " + str(maxi) + "\n"))
     print(drift(r0, 0.1))
     for timept in timestamps:

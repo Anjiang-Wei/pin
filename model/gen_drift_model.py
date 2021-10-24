@@ -28,7 +28,7 @@ useR = True
 model_char = "B"
 config = {
     "A": [30 * 1e3, 3.227 * 1e3], # maxi, mini of resistance range
-    "B": [50 * 1e3, 6 * 1e3]
+    "B": [50 * 1e3, 7812.5]
 }
 
 def init():
