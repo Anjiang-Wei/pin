@@ -119,7 +119,7 @@ def draw():
     # Conductance plot
     for i in range(nranges):
         if i == 6:
-            plt.ylim(0, 500000)
+            plt.ylim(0, 300000)
         rdata = pd_data[pd_data['bin'] == i]
         color = sns.color_palette()[i]
         sns.distplot(rdata['g'], kde=True, label='Range %d' % i, axlabel=True)

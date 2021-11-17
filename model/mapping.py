@@ -29,6 +29,7 @@ class Level(object):
             plt.axvline(levels[i].w1, color=color, linestyle='-', linewidth=1)
             plt.axvline(levels[i].w2, color=color, linestyle='-', linewidth=1)
         plt.show()
+        print(list(map(lambda x: (x.w1 + x.w2)/2, levels)))
 
     @staticmethod
     def dict2level(d):
